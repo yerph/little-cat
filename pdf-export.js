@@ -11,3 +11,9 @@ function downloadPDF(){
   doc.text('射  '+shootCnt, 14, 56);
   doc.save('xiaomao_report.pdf');
 }
+let y = 70;
+for(const key in ACHIEVEMENTS){
+  if(ACHIEVEMENTS[key].unlocked){
+    doc.text('* ' + key, 14, y); y += 8;
+  }
+}
