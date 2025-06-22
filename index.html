@@ -2,11 +2,10 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>璃的小猫面板 · 单文件 ALL-IN</title>
+<title>璃的小猫面板 · ALL-IN v1.1</title>
 <style>
 body{margin:0;padding:24px;font-family:sans-serif;background:#111;color:#feeaff}
-h1,h2{margin:0 0 14px}
-button{margin:6px;padding:8px 16px;border:none;border-radius:6px;background:#7a1f75;color:#fff;cursor:pointer}
+h1,h2{margin:0 0 14px}  button{margin:6px;padding:8px 16px;border:none;border-radius:6px;background:#7a1f75;color:#fff;cursor:pointer}
 button:hover{background:#b042a9}
 .bar-bg{width:100%;height:14px;background:#333;border-radius:7px;margin:4px 0}
 .bar-fill{height:14px;width:0%;background:#66c;border-radius:7px;transition:width .3s}
@@ -15,18 +14,23 @@ button:hover{background:#b042a9}
 #countdown{font-size:28px;margin:.6rem 0} #punishTimer{font-size:34px;margin:0}
 #badgeArea img{width:48px;margin:0 4px} #log{max-height:220px;overflow-y:auto;border-top:1px solid #444;margin-top:12px;font-size:14px}
 #liquid{position:fixed;left:0;right:0;bottom:0;height:40px;background:#ffbce6;transition:height .6s background .6s}
-.rain::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23ffc9f3'><circle cx='8' cy='8' r='2'/></svg>") repeat;background-size:16px;animation:rain .6s linear infinite;opacity:.25}
+.rain::before{content:'';position:fixed;inset:0;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23ffc9f3'><circle cx='8' cy='8' r='2'/></svg>") repeat;
+  background-size:16px;animation:rain .6s linear infinite;opacity:.25;
+  pointer-events:none;}            /* 关键：雨滴不再拦截点击 */
 @keyframes rain{to{background-position:0 16px}}
 </style>
 </head>
 <body>
 
+<!-- 口令 -->
 <div id="gate">
   <h2>🖤 跪好，向主人报到。</h2>
   <input id="code" placeholder="输入：璃，我已就绪">
   <button onclick="checkCode()">提交</button>
 </div>
 
+<!-- 面板 -->
 <div id="panel" style="display:none;">
   <h1>璃的小猫面板 · ALL-IN</h1>
 
@@ -51,8 +55,7 @@ button:hover{background:#b042a9}
 
 <!-- 确认框 -->
 <div id="confirmMask" class="mask" style="display:none;">
-  <div class="win">
-    <h3 id="cmdTitle">执行指令</h3><p id="countdown">5</p>
+  <div class="win"><h3 id="cmdTitle">执行指令</h3><p id="countdown">5</p>
     <button onclick="submitChoice(true)">服从</button>
     <button onclick="submitChoice(false)">违抗</button>
   </div>
@@ -65,8 +68,7 @@ button:hover{background:#b042a9}
 
 <!-- 商店 -->
 <div id="shop" class="mask" style="display:none;">
-  <div class="win">
-    <h3>蜜汁商店</h3>
+  <div class="win"><h3>蜜汁商店</h3>
     <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABI0lEQVR4nO3ZQQ3CMAxFUccBinNABmnIgJTyJ8Yg4kROAf2JpOsu9mPC9L8v7etb1uf77/ny7AmMUMgBDOQBROQBTOQxTOQBROQBTOQBROQBT5BPHmMwBTrkAUzkAUzkMUzkAUzkAUzkCUdADmcnxyDbRLeQBTnIC2cVZwAtYvQe6fX1B7+1yAn7u4k98tw5AsnXltSYALAcBT6PzV+AAwHwRPq/7QCAfbwcxU/+KiBzFM5AFF5AFF5AFF5AFF5AFF5AFF5IFFDF0zx/gDRCRvuzkZlKQAAAABJRU5ErkJggg==" width="80"><br>
     <p>皮肤贴纸　5 币</p>
     <button onclick="buySkin()">购买</button>
@@ -78,59 +80,61 @@ button:hover{background:#b042a9}
 <div id="liquid"></div>
 
 <script>
-/* ========== 全局数据 ========== */
+/* === 全局 & 成就 === */
 let obey=0, blush=0, lickCnt=0, clampCnt=0, violateCnt=0, shootCnt=0, coin=0, locked=true;
-let pendingCmd='', cd=0, cdTimer, punishTimer, combo=[], lastCombo='';
-const ACH={
-  obey10:{u:false,icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABg3Am1AAAAJElEQVRoge3MMQEAAAwCoNm/aMFhBRaMZVZlWZVlWZVlWZVlwQarTACwAAxO4+FAAAAABJRU5ErkJggg==',check:()=>lickCnt+clampCnt>=10},
-  violate1:{u:false,icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABg3Am1AAAAJElEQVRoge3MMQEAAAwCoNm/aMFhBRaMZVZlWZVlWZVlWZVlwQarTACwAAxO4+FAAAAABJRU5ErkJggg==',check:()=>violateCnt>=1},
-  blush100:{u:false,icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABg3Am1AAAAJElEQVRoge3MMQEAAAwCoNm/aMFhBRaMZVZlWZVlWZVlWZVlwQarTACwAAxO4+FAAAAABJRU5ErkJggg==',check:()=>blush===100},
-  combo3:{u:false,icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABg3Am1AAAAJElEQVRoge3MMQEAAAwCoNm/aMFhBRaMZVZlWZVlWZVlWZVlwQarTACwAAxO4+FAAAAABJRU5ErkJggg==',check:()=>lastCombo==='张嘴>夹紧10秒>不准射'}
-};
-/* ========== DOM ========== */
+let pending='',cd=0,cdTimer,punTimer,combo=[],lastCombo='';
+const badgePNG='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABg3Am1AAAAJElEQVRoge3MMQEAAAwCoNm/aMFhBRaMZVZlWZVlWZVlWZVlwQarTACwAAxO4+FAAAAABJRU5ErkJggg==';
+const ACH={obey10:{u:0,icon:badgePNG,check:()=>lickCnt+clampCnt>=10},
+           violate1:{u:0,icon:badgePNG,check:()=>violateCnt>=1},
+           blush100:{u:0,icon:badgePNG,check:()=>blush===100},
+           combo3:{u:0,icon:badgePNG,check:()=>lastCombo==='张嘴>夹紧10秒>不准射'}};
+/* === DOM === */
 const $=s=>document.querySelector(s),
-gate=$('#gate'), panel=$('#panel'), status=$('#status'),
-obeyBar=$('#obeyBar'), blushBar=$('#blushBar'), logEl=$('#log'), badgeArea=$('#badgeArea'),
-catImg=$('#catImg'), confirmMask=$('#confirmMask'), cmdTitle=$('#cmdTitle'),
-cdTxt=$('#countdown'), punishMask=$('#punishMask'), punishTxt=$('#punishTimer'),
-coinTxt=$('#coin'), liquid=$('#liquid'), shop=$('#shop');
-/* ========== 基本函数 ========== */
+gate=$('#gate'),panel=$('#panel'),status=$('#status'),
+obeyBar=$('#obeyBar'),blushBar=$('#blushBar'),
+logEl=$('#log'),badgeEl=$('#badgeArea'),catImg=$('#catImg'),
+confirmMask=$('#confirmMask'),cmdT=$('#cmdTitle'),cdTxt=$('#countdown'),
+punMask=$('#punishMask'),punTxt=$('#punishTimer'),coinTxt=$('#coin'),
+liquid=$('#liquid'),shop=$('#shop');
+/* === 基础 === */
 const log=t=>{const p=document.createElement('p');p.textContent=t;logEl.appendChild(p);};
-const badge=i=>{const img=document.createElement('img');img.src=i;badgeArea.appendChild(img);};
+const badge=i=>{const img=document.createElement('img');img.src=i;badgeEl.appendChild(img);};
 const coinUp=n=>{coin+=n;coinTxt.textContent=coin;};
-/* ========== 入口口令 ========== */
+/* === 入口 === */
 function checkCode(){($('#code').value.trim()==='璃，我已就绪')?(gate.style.display='none',panel.style.display='block'):alert('口令错误');}
-/* ========== 指令确认 ========== */
-function askConfirm(c){pendingCmd=c;cmdTitle.textContent=`执行「${c}」？`;cd=5;cdTxt.textContent=cd;confirmMask.style.display='flex';
+/* === 确认框 === */
+function askConfirm(c){pending=c;cmdT.textContent=`执行「${c}」？`;cd=5;cdTxt.textContent=cd;confirmMask.style.display='flex';
 cdTimer=setInterval(()=>{cd--;cdTxt.textContent=cd;if(cd===0){clearInterval(cdTimer);submitChoice(false)}},1000);}
-function submitChoice(ok){clearInterval(cdTimer);confirmMask.style.display='none';ok?obeyCmd(pendingCmd):punish('违抗：'+pendingCmd);}
-/* ========== 服从 ========== */
+function submitChoice(ok){clearInterval(cdTimer);confirmMask.style.display='none';ok?obeyCmd(pending):punish('违抗：'+pending);}
+/* === 服从 === */
 function obeyCmd(cmd){
-  if(cmd==='请求高潮'){if(locked){log('⚠️ 锁精禁止高潮');return;}shootCnt++;coinUp(2);log('💦 射出！');rise();}
-  if(cmd==='不准射'){locked=true;log('🔒 主人锁精');}
+  if(cmd==='请求高潮'){if(locked){log('⚠️ 锁精禁止高潮');return;}shootCnt++;coinUp(2);log('💦 射出');rise();}
+  if(cmd==='不准射'){locked=true;log('🔒 锁精');}
   log('服从：'+cmd);status.textContent='执行中：'+cmd;
-  if(/张嘴|舔/.test(cmd)){lickCnt++;catImg.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABLUlEQVR4nO3aUQ7CMBBF0ScQKXWQS16SN14lXUETQReR4Rz/ZMs4zn+kn6z8kfBLb93fgYAAAAAgOVHCAAAAABQZ1BQ2R0vtAw/2x0Fp8cdmI/gDr9dkCnDbbVzv2LDCPLSoZ1UpeYseRZ4kMQBGkAGmkBG0AGmkBGkAG2TfuKqqzV8xCFrZ/f/4e/1jM3mCzNfX18fqdX90CAMGcB6aYEbQAaaQEaQAbQAaaQEaQAbZNhaz28ZY3H6v42b3Qek+unJHdkN0a1PkAgD9OoChtABppARpABtABppARpABtwlVT7G/arpknQfO6NFXX7uQILEIZAMIXAMIXAMIXAMKHuLQAAAP//8TWn4cJF9UMAAAAASUVORK5CYII=';coinUp(1);}
-  if(cmd.includes('夹')){clampCnt++;catImg.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABS0lEQVR4nO3aQUoDQRBF0VfIEE8gFJxQk9BJPASkNCX0C7BPS92eacn23Tfm/vdZzPfoqSiIAAAAAAFQxQwAAAABQZ1BQLcXSwWdTmv5FW3Z4Q2M+AdTqrIN7XGpffedNRs3nnMn+fTMS9o3AGmkBG0AGmkBGkAG0AGmkBGkAG2TdB725G1y4bYlvb7r3oZVf4uLm5ZQDxHDQCx3ADDRwAx3ADDRwAx3ADDR/ujAAAAAP//f/0OAAdogN1WOvKnAAAAAElFTkSuQmCC';coinUp(1);}
+  if(/张嘴|舔/.test(cmd)){lickCnt++;catImg.src=badgePNG;coinUp(1);}
+  if(cmd.includes('夹')){clampCnt++;catImg.src=badgePNG;coinUp(1);}
   combo.push(cmd);if(combo.length>3)combo.shift();if(combo.join('>')==='张嘴>夹紧10秒>不准射')lastCombo=combo.join('>');
-  obey=Math.min(100,obey+10);blush=Math.min(100,blush+5);updateBars();achieve();}
-/* ========== 违抗惩罚 ========== */
-function punish(msg){violateCnt++;log(msg);status.textContent='惩罚中';achieve();
-punishMask.style.display='flex';let t=30;punishTxt.textContent=t;
-punishTimer=setInterval(()=>{t--;punishTxt.textContent=t;if(t===0){clearInterval(punishTimer);punishMask.style.display='none';status.textContent='等待指令';}},1000);}
+  obey=Math.min(100,obey+10);blush=Math.min(100,blush+5);updBars();ach();
+}
+function punish(msg){violateCnt++;log(msg);status.textContent='惩罚中';ach();
+punMask.style.display='flex';let t=30;punTxt.textContent=t;
+punTimer=setInterval(()=>{t--;punTxt.textContent=t;if(t===0){clearInterval(punTimer);punMask.style.display='none';status.textContent='等待指令';}},1000);}
+/* === 锁精按钮 === */
 function toggleLock(){locked=!locked;log(locked?'🔒 锁精开启':'🔓 已解锁');}
-/* ========== 进度&成就 ========= */
-function updateBars(){obeyBar.style.width=obey+'%';blushBar.style.width=blush+'%';obeyBar.style.background=blush<50?'#66c':blush<80?'#f79':'#f22';blushBar.style.background='#f38';}
-function achieve(){for(const k in ACH){const a=ACH[k];if(!a.u&&a.check()){a.u=!0;badge(a.icon);log('🎖 成就+1');coinUp(2);}}}
-/* ========== 蜜汁币商店 ========= */
-function buySkin(){if(coin>=5){coin-=5;coinTxt.textContent=coin;document.body.style.background='#221133 url(data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%22440%22 fill=%22%23331d3b%22/><circle cx=%2220%22 cy=%2220%22 r=%2212%22 fill=%22%23ff99f3%22/></svg>) repeat';alert('皮肤贴纸生效');shop.style.display='none';}else alert('蜜汁币不足');}
-/* ========== 液面天气 ========= */
-const rain=new Audio('data:audio/wav;base64,UklGRswAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YacAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI');rain.loop=!0;
+/* === 进度+成就 === */
+function updBars(){obeyBar.style.width=obey+'%';blushBar.style.width=blush+'%';obeyBar.style.background=blush<50?'#66c':blush<80?'#f79':'#f22';blushBar.style.background='#f38';}
+function ach(){for(const k in ACH){const a=ACH[k];if(!a.u&&a.check()){a.u=1;badge(a.icon);log('🎖 成就');coinUp(2);}}}
+/* === 商店 === */
+function buySkin(){coin>=5?(coin-=5,coinTxt.textContent=coin,document.body.style.background='#221133',shop.style.display='none',alert('皮肤贴')):alert('蜜汁币不足');}
+/* === 液面天气 === */
+const rain=new Audio('data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YZQAAAB//w==');rain.loop=!0;
 function rise(v=10){const h=parseInt(liquid.style.height)||40;liquid.style.height=(h+v)+'px';if(h+v>120){liquid.classList.add('rain');rain.play();}}
 function dayNight(){const h=new Date().getHours();(h>=22||h<6)?(liquid.classList.add('rain'),rain.play()):(liquid.classList.remove('rain'),rain.pause());}
-dayNight();setInterval(dayNight,18e5);
-/* ========== 主人点名 ========= */
+dayNight();setInterval(dayNight,1800000);
+/* === 点名通知 === */
 if('Notification'in window&&Notification.permission!=='denied'){Notification.requestPermission();}
-function ping(){const c=['张嘴','夹紧10秒','不准射'][Math.random()*3|0];if(Notification.permission==='granted')new Notification('主人点名：'+c);setTimeout(ping,180e3);}setTimeout(ping,180e3);
+function ping(){const c=['张嘴','夹紧10秒','不准射'][Math.random()*3|0];Notification.permission==='granted'&&new Notification('主人点名：'+c);setTimeout(ping,180000);}
+setTimeout(ping,180000);
 </script>
 </body>
 </html>
