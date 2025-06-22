@@ -1,3 +1,5 @@
+let combo     = [];     // 最近 3 条指令
+let lastCombo = '';     // 命中时记录字符串
 /* 成就字典：key → {unlocked, icon, check()} */
 const ACHIEVEMENTS = {
   obey10: {
