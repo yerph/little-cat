@@ -1,0 +1,12 @@
+
+{
+  "commands": ["张嘴","夹紧10秒","舔脚趾","不准射"],
+  "shameLines": [
+    "我是沈璃的小猫，被命令就会滴出来……",
+    "舔你脚趾的时候我自己先高潮了……"
+  ],
+  "achievements": {
+    "obey10":   { "threshold": 10, "title": "连续服从 ×10",  "icon": "img/badge_obey10.png"  },
+    "violate1": { "threshold": 1,  "title": "第一次违令",    "icon": "img/badge_violate1.png" }
+  }
+}
