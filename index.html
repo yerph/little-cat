@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <title>璃的小猫面板 core</title>
   <link rel="stylesheet" href="style.css">
-  <script src="pdf-export.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- jsPDF 库：用于 PDF 导出；如果暂时不用，可先删去 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="pdf-export.js"></script>
+  <script defer src="script.js"></script>
 </head>
 <body>
 <div id="gate">
@@ -16,12 +18,14 @@
 
 <div id="panel" style="display:none;">
   <h1>璃的小猫面板 core</h1>
-<img id="catImg" src="img/cat_idle.png" width="140" />
+
+  <!-- 像素小猫 -->
+  <img id="catImg" src="img/cat_idle.png" width="140" style="display:block;margin-bottom:10px" />
 
   <!-- 双进度条 -->
   <div class="bars">
     服从度
-    <div class="bar-bg"><div id="barObey" class="bar-fill"></div></div>
+    <div class="bar-bg"><div id="barObey"  class="bar-fill"></div></div>
     脸红度
     <div class="bar-bg"><div id="barBlush" class="bar-fill"></div></div>
   </div>
@@ -32,12 +36,16 @@
   <button onclick="askConfirm('张嘴')">张嘴</button>
   <button onclick="askConfirm('夹紧10秒')">夹紧10秒</button>
   <button onclick="askConfirm('不准射')">不准射</button>
+  <button onclick="askConfirm('舔脚趾')">舔脚趾</button>
 
   <!-- 日志 -->
-  <div id="log"></div>
+  <div id="log" style="margin-top:10px"></div>
+
+  <!-- 导出 PDF -->
+  <button onclick="downloadPDF()">📜 下载今日 PDF</button>
 </div>
 
-<!-- 服从 / 违抗 确认框 -->
+<!-- 服从 / 违抗确认框 -->
 <div id="confirmMask" class="mask" style="display:none;">
   <div class="confirmWindow">
     <h3 id="cmdTitle">执行指令</h3>
@@ -54,7 +62,5 @@
     <p id="punishTimer">30</p>
   </div>
 </div>
-
-<script src="script.js"></script>
 </body>
 </html>
