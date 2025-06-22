@@ -1,21 +1,19 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>璃的小猫面板 v2.5</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>璃的小猫面板 core</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- 启动口令 -->
 <div id="gate">
   <h2>🖤 跪好，向主人报到。</h2>
-  <input id="code" placeholder="输入：璃，我已就绪" />
+  <input id="code" placeholder="输入：璃，我已就绪">
   <button onclick="checkCode()">提交</button>
 </div>
 
-<!-- 主面板 -->
 <div id="panel" style="display:none;">
-  <h1>璃的小猫面板 v2.5 β</h1>
+  <h1>璃的小猫面板 core</h1>
 
   <!-- 双进度条 -->
   <div class="bars">
@@ -28,28 +26,18 @@
   <p>🧎‍♀️ 状态：<span id="status">等待主人指令</span></p>
 
   <!-- 指令按钮 -->
-  <div id="btnArea">
-    <button onclick="askConfirm('张嘴')">张嘴</button>
-    <button onclick="askConfirm('夹紧10秒')">夹紧10秒</button>
-    <button onclick="askConfirm('不准射')">不准射</button>
-    <button onclick="askConfirm('舔脚趾')">舔脚趾</button>
-  </div>
-
-  <!-- 随机事件横幅 -->
-  <div id="eventBanner" style="display:none;"></div>
+  <button onclick="askConfirm('张嘴')">张嘴</button>
+  <button onclick="askConfirm('夹紧10秒')">夹紧10秒</button>
+  <button onclick="askConfirm('不准射')">不准射</button>
 
   <!-- 日志 -->
   <div id="log"></div>
-
-  <!-- 下载 PDF（占位）-->
-  <button onclick="downloadPDF()">📜 下载今日 PDF</button>
 </div>
 
-<!-- 服从 / 违抗确认框 -->
+<!-- 服从 / 违抗 确认框 -->
 <div id="confirmMask" class="mask" style="display:none;">
   <div class="confirmWindow">
     <h3 id="cmdTitle">执行指令</h3>
-    <p>5 秒内选择，否则视为违抗</p>
     <p id="countdown">5</p>
     <button onclick="submitChoice(true)">服从</button>
     <button onclick="submitChoice(false)">违抗</button>
