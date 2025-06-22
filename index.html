@@ -2,35 +2,35 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>璃的小猫面板 · ALL-IN v1.1</title>
+<title>璃的小猫面板 · ALL-IN v1.2</title>
 <style>
 body{margin:0;padding:24px;font-family:sans-serif;background:#111;color:#feeaff}
-h1,h2{margin:0 0 14px}  button{margin:6px;padding:8px 16px;border:none;border-radius:6px;background:#7a1f75;color:#fff;cursor:pointer}
-button:hover{background:#b042a9}
-.bar-bg{width:100%;height:14px;background:#333;border-radius:7px;margin:4px 0}
+h1,h2{margin:0 0 14px}button{margin:6px;padding:8px 16px;border:none;border-radius:6px;background:#7a1f75;color:#fff;cursor:pointer}
+button:hover{background:#b042a9}.bar-bg{width:100%;height:14px;background:#333;border-radius:7px;margin:4px 0}
 .bar-fill{height:14px;width:0%;background:#66c;border-radius:7px;transition:width .3s}
 .mask{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;justify-content:center;align-items:center;text-align:center}
 .win{background:#272727;padding:22px 34px;border-radius:10px;width:260px}
-#countdown{font-size:28px;margin:.6rem 0} #punishTimer{font-size:34px;margin:0}
-#badgeArea img{width:48px;margin:0 4px} #log{max-height:220px;overflow-y:auto;border-top:1px solid #444;margin-top:12px;font-size:14px}
-#liquid{position:fixed;left:0;right:0;bottom:0;height:40px;background:#ffbce6;transition:height .6s background .6s}
+#countdown{font-size:28px;margin:.6rem 0}#punishTimer{font-size:34px;margin:0}
+#badgeArea img{width:48px;margin:0 4px}#log{max-height:220px;overflow-y:auto;border-top:1px solid #444;margin-top:12px;font-size:14px}
+#liquid{position:fixed;left:0;right:0;bottom:0;height:40px;background:#ffbce6;transition:height .6s}
 .rain::before{content:'';position:fixed;inset:0;
-  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23ffc9f3'><circle cx='8' cy='8' r='2'/></svg>") repeat;
-  background-size:16px;animation:rain .6s linear infinite;opacity:.25;
-  pointer-events:none;}            /* 关键：雨滴不再拦截点击 */
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23ffc9f3'><circle cx='8' cy='8' r='2'/></svg>") repeat;background-size:16px;
+  animation:rain .6s linear infinite;opacity:.25;pointer-events:none}
 @keyframes rain{to{background-position:0 16px}}
+/* 随机事件横幅 */
+#randEvt{position:fixed;top:12px;left:50%;transform:translateX(-50%);
+  background:#ff5aa1;color:#fff;padding:6px 16px;border-radius:8px;font-weight:bold;
+  box-shadow:0 0 8px rgba(0,0,0,.4);z-index:1000;display:none;cursor:pointer}
 </style>
 </head>
 <body>
 
-<!-- 口令 -->
 <div id="gate">
   <h2>🖤 跪好，向主人报到。</h2>
   <input id="code" placeholder="输入：璃，我已就绪">
   <button onclick="checkCode()">提交</button>
 </div>
 
-<!-- 面板 -->
 <div id="panel" style="display:none;">
   <h1>璃的小猫面板 · ALL-IN</h1>
 
@@ -46,12 +46,15 @@ button:hover{background:#b042a9}
   <button onclick="askConfirm('不准射')">不准射</button>
   <button onclick="askConfirm('舔脚趾')">舔脚趾</button>
   <button onclick="askConfirm('请求高潮')">请求高潮</button>
-  <button id="lockBtn" onclick="toggleLock()">🔒/🔓</button>
+  <button onclick="toggleLock()">🔒/🔓</button>
 
   <p style="margin:8px 0;">💰 <span id="coin">0</span> 蜜汁币　<button onclick="shop.style.display='flex'">商店</button></p>
   <div id="badgeArea"></div>
   <div id="log"></div>
 </div>
+
+<!-- 随机横幅 -->
+<div id="randEvt"></div>
 
 <!-- 确认框 -->
 <div id="confirmMask" class="mask" style="display:none;">
@@ -76,11 +79,11 @@ button:hover{background:#b042a9}
   </div>
 </div>
 
-<!-- 液面 -->
+<!-- 液面条 -->
 <div id="liquid"></div>
 
 <script>
-/* === 全局 & 成就 === */
+/* === 全局数据 & 成就 === */
 let obey=0, blush=0, lickCnt=0, clampCnt=0, violateCnt=0, shootCnt=0, coin=0, locked=true;
 let pending='',cd=0,cdTimer,punTimer,combo=[],lastCombo='';
 const badgePNG='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABg3Am1AAAAJElEQVRoge3MMQEAAAwCoNm/aMFhBRaMZVZlWZVlWZVlWZVlwQarTACwAAxO4+FAAAAABJRU5ErkJggg==';
@@ -91,16 +94,15 @@ const ACH={obey10:{u:0,icon:badgePNG,check:()=>lickCnt+clampCnt>=10},
 /* === DOM === */
 const $=s=>document.querySelector(s),
 gate=$('#gate'),panel=$('#panel'),status=$('#status'),
-obeyBar=$('#obeyBar'),blushBar=$('#blushBar'),
-logEl=$('#log'),badgeEl=$('#badgeArea'),catImg=$('#catImg'),
-confirmMask=$('#confirmMask'),cmdT=$('#cmdTitle'),cdTxt=$('#countdown'),
-punMask=$('#punishMask'),punTxt=$('#punishTimer'),coinTxt=$('#coin'),
-liquid=$('#liquid'),shop=$('#shop');
-/* === 基础 === */
+obeyBar=$('#obeyBar'),blushBar=$('#blushBar'),logEl=$('#log'),badgeEl=$('#badgeArea'),
+catImg=$('#catImg'),confirmMask=$('#confirmMask'),cmdT=$('#cmdTitle'),
+cdTxt=$('#countdown'),punMask=$('#punishMask'),punTxt=$('#punishTimer'),coinTxt=$('#coin'),
+liquid=$('#liquid'),shop=$('#shop'),randEvt=$('#randEvt');
+/* === 基础函数 === */
 const log=t=>{const p=document.createElement('p');p.textContent=t;logEl.appendChild(p);};
 const badge=i=>{const img=document.createElement('img');img.src=i;badgeEl.appendChild(img);};
 const coinUp=n=>{coin+=n;coinTxt.textContent=coin;};
-/* === 入口 === */
+/* === 入口口令 === */
 function checkCode(){($('#code').value.trim()==='璃，我已就绪')?(gate.style.display='none',panel.style.display='block'):alert('口令错误');}
 /* === 确认框 === */
 function askConfirm(c){pending=c;cmdT.textContent=`执行「${c}」？`;cd=5;cdTxt.textContent=cd;confirmMask.style.display='flex';
@@ -114,27 +116,34 @@ function obeyCmd(cmd){
   if(/张嘴|舔/.test(cmd)){lickCnt++;catImg.src=badgePNG;coinUp(1);}
   if(cmd.includes('夹')){clampCnt++;catImg.src=badgePNG;coinUp(1);}
   combo.push(cmd);if(combo.length>3)combo.shift();if(combo.join('>')==='张嘴>夹紧10秒>不准射')lastCombo=combo.join('>');
-  obey=Math.min(100,obey+10);blush=Math.min(100,blush+5);updBars();ach();
-}
+  obey=Math.min(100,obey+10);blush=Math.min(100,blush+5);updBars();ach();}
 function punish(msg){violateCnt++;log(msg);status.textContent='惩罚中';ach();
 punMask.style.display='flex';let t=30;punTxt.textContent=t;
 punTimer=setInterval(()=>{t--;punTxt.textContent=t;if(t===0){clearInterval(punTimer);punMask.style.display='none';status.textContent='等待指令';}},1000);}
-/* === 锁精按钮 === */
 function toggleLock(){locked=!locked;log(locked?'🔒 锁精开启':'🔓 已解锁');}
-/* === 进度+成就 === */
+/* === 进度 & 成就 === */
 function updBars(){obeyBar.style.width=obey+'%';blushBar.style.width=blush+'%';obeyBar.style.background=blush<50?'#66c':blush<80?'#f79':'#f22';blushBar.style.background='#f38';}
 function ach(){for(const k in ACH){const a=ACH[k];if(!a.u&&a.check()){a.u=1;badge(a.icon);log('🎖 成就');coinUp(2);}}}
-/* === 商店 === */
-function buySkin(){coin>=5?(coin-=5,coinTxt.textContent=coin,document.body.style.background='#221133',shop.style.display='none',alert('皮肤贴')):alert('蜜汁币不足');}
-/* === 液面天气 === */
+/* === 蜜汁币商店 === */
+function buySkin(){coin>=5?(coin-=5,coinTxt.textContent=coin,document.body.style.background='#221133',shop.style.display='none',alert('皮肤贴纸生效')):alert('蜜汁币不足');}
+/* === 液面・天气 === */
 const rain=new Audio('data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YZQAAAB//w==');rain.loop=!0;
-function rise(v=10){const h=parseInt(liquid.style.height)||40;liquid.style.height=(h+v)+'px';if(h+v>120){liquid.classList.add('rain');rain.play();}}
-function dayNight(){const h=new Date().getHours();(h>=22||h<6)?(liquid.classList.add('rain'),rain.play()):(liquid.classList.remove('rain'),rain.pause());}
+const rise=v=>{const h=parseInt(liquid.style.height)||40;liquid.style.height=(h+v)+'px';if(h+v>120){liquid.classList.add('rain');rain.play();}}
+const dayNight=()=>{const h=new Date().getHours();(h>=22||h<6)?(liquid.classList.add('rain'),rain.play()):(liquid.classList.remove('rain'),rain.pause());}
 dayNight();setInterval(dayNight,1800000);
-/* === 点名通知 === */
-if('Notification'in window&&Notification.permission!=='denied'){Notification.requestPermission();}
-function ping(){const c=['张嘴','夹紧10秒','不准射'][Math.random()*3|0];Notification.permission==='granted'&&new Notification('主人点名：'+c);setTimeout(ping,180000);}
+/* === 浏览器点名通知 === */
+if('Notification'in window&&Notification.permission!=='denied')Notification.requestPermission();
+const ping=()=>{const c=['张嘴','夹紧10秒','不准射'][Math.random()*3|0];Notification.permission==='granted'&&new Notification('主人点名：'+c);setTimeout(ping,180000);}
 setTimeout(ping,180000);
+/* === 随机小事件 === */
+const RAND_CMDS=['张嘴','夹紧10秒','舔脚趾','不准射'];
+const scheduleRand=()=>{setTimeout(()=>{triggerRand();scheduleRand();},180000)};scheduleRand();
+function triggerRand(){
+  const cmd=RAND_CMDS[Math.floor(Math.random()*RAND_CMDS.length)];
+  let t=5;randEvt.textContent=`主人随机命令：${cmd} (${t}s)`;randEvt.style.display='block';
+  const tick=setInterval(()=>{t--;randEvt.textContent=`主人随机命令：${cmd} (${t}s)`;if(t===0){clearInterval(tick);randEvt.style.display='none';punish('随机事件违抗：'+cmd);}},1000);
+  randEvt.onclick=()=>{clearInterval(tick);randEvt.style.display='none';askConfirm(cmd);}
+}
 </script>
 </body>
 </html>
