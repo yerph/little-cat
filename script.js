@@ -1,3 +1,27 @@
+/* 成就字典：key → {unlocked, icon, check()} */
+const ACHIEVEMENTS = {
+  obey10: {
+    unlocked:false,
+    icon:'img/badge_obey10.png',
+    check: ()=> lickCnt + clampCnt >= 10     // 连续服从 10 次
+  },
+  violate1:{
+    unlocked:false,
+    icon:'img/badge_violate1.png',
+    check: ()=> violateCnt >= 1              // 首次违抗
+  },
+  blush100:{
+    unlocked:false,
+    icon:'img/badge_blush100.png',
+    check: ()=> blush === 100                // 脸红度满
+  },
+  combo3:{
+    unlocked:false,
+    icon:'img/badge_combo3.png',
+    check: ()=> lastCombo === '张嘴>夹紧10秒>不准射' // 连招
+  }
+};
+
 /* ── 全局数据 ──────────────────────────── */
 let obey = 0, blush = 0;
 let lickCnt = 0, clampCnt = 0, violateCnt = 0, shootCnt = 0;
