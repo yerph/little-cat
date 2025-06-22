@@ -1,26 +1,35 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>璃的小猫面板 core</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- jsPDF 库：用于 PDF 导出；如果暂时不用，可先删去 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script defer src="pdf-export.js"></script>
-  <script defer src="script.js"></script>
+<meta charset="UTF-8">
+<title>璃的小猫面板 · 单文件版</title>
+<style>
+body{margin:0;padding:20px;font-family:sans-serif;background:#181818;color:#ffeefc}
+h1,h2{margin:0 0 12px}
+button{margin:6px;padding:8px 16px;border:none;border-radius:6px;background:#6d1b61;color:#fff;cursor:pointer}
+button:hover{background:#a13b96}
+.bar-bg{width:100%;height:14px;background:#333;border-radius:7px;margin:4px 0}
+.bar-fill{height:14px;width:0%;background:#66c;border-radius:7px;transition:width .3s,background .3s}
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;justify-content:center;align-items:center;text-align:center}
+.confirmWindow,.punishWindow{background:#262626;padding:20px 30px;border-radius:10px;width:260px}
+#countdown{font-size:26px;margin:.6rem 0} #punishTimer{font-size:32px;margin:0}
+</style>
 </head>
 <body>
+
+<!-- 启动口令 -->
 <div id="gate">
   <h2>🖤 跪好，向主人报到。</h2>
   <input id="code" placeholder="输入：璃，我已就绪">
   <button onclick="checkCode()">提交</button>
 </div>
 
+<!-- 主面板 -->
 <div id="panel" style="display:none;">
-  <h1>璃的小猫面板 core</h1>
+  <h1>璃的小猫面板 · 单文件</h1>
 
-  <!-- 像素小猫 -->
-  <img id="catImg" src="img/cat_idle.png" width="140" style="display:block;margin-bottom:10px" />
+  <!-- 像素小猫（占位） -->
+  <img id="catImg" src="img/cat_idle.png" width="140" style="display:block;margin-bottom:10px">
 
   <!-- 双进度条 -->
   <div class="bars">
@@ -38,11 +47,7 @@
   <button onclick="askConfirm('不准射')">不准射</button>
   <button onclick="askConfirm('舔脚趾')">舔脚趾</button>
 
-  <!-- 日志 -->
   <div id="log" style="margin-top:10px"></div>
-
-  <!-- 导出 PDF -->
-  <button onclick="downloadPDF()">📜 下载今日 PDF</button>
 </div>
 
 <!-- 服从 / 违抗确认框 -->
@@ -62,5 +67,65 @@
     <p id="punishTimer">30</p>
   </div>
 </div>
+
+<script>
+/* 全局计数 */
+let obey=0, blush=0, lickCnt=0, clampCnt=0, violateCnt=0;
+let pendingCmd='', cd=0, cdTimer, punishTimer;
+
+/* DOM */
+const gate=document.getElementById('gate'), panel=document.getElementById('panel');
+const obeyBar=document.getElementById('barObey'), blushBar=document.getElementById('barBlush');
+const status=document.getElementById('status'), logElem=document.getElementById('log');
+const catImg=document.getElementById('catImg'), confirmMask=document.getElementById('confirmMask');
+const cmdTitle=document.getElementById('cmdTitle'), countdown=document.getElementById('countdown');
+const punishMask=document.getElementById('punishMask'), punishTimerElem=document.getElementById('punishTimer');
+
+/* 启动口令 */
+function checkCode(){
+  if(document.getElementById('code').value.trim()==='璃，我已就绪'){
+    gate.style.display='none'; panel.style.display='block';
+  }else alert('口令错误，重输！');
+}
+
+/* 指令确认 */
+function askConfirm(cmd){
+  pendingCmd=cmd;
+  cmdTitle.textContent=`执行「${cmd}」？`;
+  cd=5;countdown.textContent=cd;
+  confirmMask.style.display='flex';
+  cdTimer=setInterval(()=>{cd--;countdown.textContent=cd;
+    if(cd===0){clearInterval(cdTimer);submitChoice(false);} },1000);
+}
+function submitChoice(obeyChoice){
+  clearInterval(cdTimer);confirmMask.style.display='none';
+  obeyChoice?doObey(pendingCmd):doPunish('违抗：'+pendingCmd);
+}
+
+/* 服从 */
+function doObey(cmd){
+  addLog('服从：'+cmd);status.textContent='执行中：'+cmd;
+  if(cmd.includes('张嘴')||cmd.includes('舔')){ lickCnt++; catImg.src='img/cat_lick.png'; }
+  if(cmd.includes('夹')){ clampCnt++; catImg.src='img/cat_clamp.png'; }
+  obey=Math.min(100,obey+10); blush=Math.min(100,blush+5); updateBars();
+}
+
+/* 违抗惩罚 */
+function doPunish(msg){
+  violateCnt++; addLog(msg);status.textContent='惩罚中'; punishMask.style.display='flex';
+  let t=30; punishTimerElem.textContent=t;
+  punishTimer=setInterval(()=>{t--;punishTimerElem.textContent=t;
+    if(t===0){clearInterval(punishTimer);punishMask.style.display='none';status.textContent='等待主人指令';}},1000);
+}
+
+/* 进度条 */
+function updateBars(){
+  obeyBar.style.width=obey+'%'; blushBar.style.width=blush+'%';
+  const clr=blush<50?'#66c':(blush<80?'#f79':'#f22'); obeyBar.style.background=clr; blushBar.style.background='#f38';
+}
+
+/* 日志打印 */
+function addLog(txt){const p=document.createElement('p');p.textContent=txt;logElem.appendChild(p);}
+</script>
 </body>
 </html>
