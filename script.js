@@ -89,6 +89,14 @@ function doObey(cmd){
   if(obey === 100){
     addLog('完全支配达成！'); obey = 0; updateBars();
   }
+  /* 记录指令顺序（限 3 条） */
+combo.push(cmd);
+if(combo.length>3) combo.shift();
+if(combo.join('>')==='张嘴>夹紧10秒>不准射') lastCombo=combo.join('>');
+
+/* 检查成就 */
+checkAchievements();
+
 }
 
 /* ── 违抗惩罚 ──────────────────────────── */
@@ -106,6 +114,14 @@ function doPunish(msg){
       status.textContent = '等待主人指令';
     }
   },1000);
+  function checkAchievements(){
+  for(const key in ACHIEVEMENTS){
+    const a = ACHIEVEMENTS[key];
+    if(!a.unlocked && a.check()){
+      a.unlocked = true;
+      showBadge(a.icon, a.title);   // 显示徽章
+    }
+  }
 }
 
 /* ── 进度条 / 液面颜色 ─────────────────── */
@@ -122,4 +138,9 @@ function addLog(txt){
   const p = document.createElement('p');
   p.textContent = txt;
   logElem.appendChild(p);
+}
+function showBadge(icon){
+  const img = document.createElement('img');
+  img.src = icon; img.style.width = '48px'; img.style.margin='0 4px';
+  badgeArea.appendChild(img);
 }
