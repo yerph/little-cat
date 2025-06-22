@@ -1,3 +1,9 @@
+/* 统计用计数器 */
+let lickCnt = 0;     // 舔的次数
+let clampCnt = 0;    // 夹的次数
+let violateCnt = 0;  // 违令次数
+let shootCnt = 0;    // 射出的次数（如果你以后加）
+
 let obey=0, blush=0, pendingCmd='', cd, cdTimer, punishTimer;
 
 const gate=document.getElementById('gate');
