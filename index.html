@@ -2,19 +2,20 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>璃的小猫面板 · FULL 单文件</title>
+<title>璃的小猫面板 · FULL-ALL</title>
 <style>
-body{margin:0;padding:24px;font-family:sans-serif;background:#111;color:#fce7ff}
-h1,h2{margin:0 0 14px}
-button{margin:6px;padding:8px 16px;border:none;border-radius:6px;background:#7a1f75;color:#fff;cursor:pointer}
+body{margin:0;padding:24px;font-family:sans-serif;background:#111;color:#ffeefc}
+h1,h2{margin:0 0 14px}  button{margin:6px;padding:8px 16px;border:none;border-radius:6px;background:#7a1f75;color:#fff;cursor:pointer}
 button:hover{background:#b042a9}
 .bar-bg{width:100%;height:14px;background:#333;border-radius:7px;margin:4px 0}
 .bar-fill{height:14px;width:0%;background:#66c;border-radius:7px;transition:width .3s,background .3s}
 .mask{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;justify-content:center;align-items:center;text-align:center}
 .win{background:#272727;padding:22px 34px;border-radius:10px;width:260px}
-#countdown{font-size:28px;margin:.6rem 0} #punishTimer{font-size:34px;margin:0}
-#badgeArea img{width:48px;margin:0 4px}
-#log{max-height:200px;overflow-y:auto;border-top:1px solid #444;margin-top:12px;padding-top:6px;font-size:14px}
+#countdown{font-size:28px;margin:.6rem 0}  #punishTimer{font-size:34px;margin:0}
+#badgeArea img{width:48px;margin:0 4px}  #log{max-height:220px;overflow-y:auto;border-top:1px solid #444;margin-top:12px;font-size:14px}
+#liquid{position:fixed;left:0;right:0;bottom:0;height:40px;background:#ffbce6;transition:height .6s background .6s}
+.rain::before{content:'';position:fixed;inset:0;background:url('icon/bell.svg') repeat;background-size:14px;animation:rain .6s linear infinite;opacity:.25}
+@keyframes rain{to{background-position:0 20px}}
 </style>
 </head>
 <body>
@@ -26,29 +27,26 @@ button:hover{background:#b042a9}
   <button onclick="checkCode()">提交</button>
 </div>
 
-<!-- 主面板 -->
+<!-- 面板 -->
 <div id="panel" style="display:none;">
-  <h1>璃的小猫面板 · FULL</h1>
+  <h1>璃的小猫面板 · FULL-ALL</h1>
 
-  <!-- 小猫动作 -->
-  <img id="catImg" src="img/cat_idle.png" width="140" style="display:block;margin-bottom:10px">
+  <img id="catImg" src="img/cat_idle.png" width="140" style="display:block;margin:10px 0">
 
-  <!-- 进度条 -->
   <div>服从度 <div class="bar-bg"><div id="obeyBar"  class="bar-fill"></div></div></div>
   <div>脸红度 <div class="bar-bg"><div id="blushBar" class="bar-fill"></div></div></div>
 
   <p>🧎‍♀️ 状态：<span id="status">等待主人指令</span></p>
 
-  <!-- 指令按钮 -->
   <button onclick="askConfirm('张嘴')">张嘴</button>
   <button onclick="askConfirm('夹紧10秒')">夹紧10秒</button>
   <button onclick="askConfirm('不准射')">不准射</button>
   <button onclick="askConfirm('舔脚趾')">舔脚趾</button>
+  <button onclick="askConfirm('请求高潮')">请求高潮</button>
+  <button id="lockBtn" onclick="toggleLock()">🔒/🔓</button>
 
-  <!-- 徽章 -->
-  <div id="badgeArea" style="margin:10px 0"></div>
-
-  <!-- 日志 -->
+  <p style="margin:8px 0;">💰 <span id="coin">0</span> 蜜汁币　<button onclick="openShop()">商店</button></p>
+  <div id="badgeArea"></div>
   <div id="log"></div>
 </div>
 
@@ -64,84 +62,101 @@ button:hover{background:#b042a9}
 
 <!-- 黑屏惩罚 -->
 <div id="punishMask" class="mask" style="display:none;">
+  <div class="win"><h3>违令惩罚</h3><p id="punishTimer">30</p></div>
+</div>
+
+<!-- 商店 -->
+<div id="shop" class="mask" style="display:none;">
   <div class="win">
-    <h3>违令惩罚</h3>
-    <p id="punishTimer">30</p>
+    <h3>蜜汁商店</h3>
+    <img src="img/shop_skin1.png" width="80"><br>
+    <p>皮肤贴纸　价格 5 币</p>
+    <button onclick="buySkin()">购买</button>
+    <button onclick="shop.style.display='none'">关闭</button>
   </div>
 </div>
 
-<script>
-/* ========== 全局数据 ========== */
-let obey=0, blush=0, lickCnt=0, clampCnt=0, violateCnt=0;
-let pendingCmd='', cd=0, cdTimer, punishTimer;
-let combo=[], lastCombo='';
+<!-- 液面 / 天气条 -->
+<div id="liquid"></div>
 
+<script>
+/* ========= 全局数据 ========= */
+let obey=0, blush=0, lickCnt=0, clampCnt=0, violateCnt=0, shootCnt=0, coin=0;
+let pendingCmd='', cd=0, cdTimer, punishTimer, locked=true;
+let combo=[], lastCombo='';
 /* 成就表 */
 const ACH={
-  obey10:{u:false, icon:'img/badge_obey10.png',  check:()=> lickCnt+clampCnt>=10},
+  obey10:{u:false,icon:'img/badge_obey10.png',  check:()=> lickCnt+clampCnt>=10},
   violate1:{u:false,icon:'img/badge_violate1.png',check:()=> violateCnt>=1},
   blush100:{u:false,icon:'img/badge_blush100.png',check:()=> blush===100},
-  combo3:{u:false, icon:'img/badge_combo3.png',  check:()=> lastCombo==='张嘴>夹紧10秒>不准射'}
+  combo3:{u:false,icon:'img/badge_combo3.png',  check:()=> lastCombo==='张嘴>夹紧10秒>不准射'}
 };
-
-/* ========== DOM ========== */
-const gate=$('#gate'), panel=$('#panel'), status=$('#status');
-const obeyBar=$('#obeyBar'), blushBar=$('#blushBar'), logEl=$('#log'), badgeArea=$('#badgeArea');
-const catImg=$('#catImg'); const confirmMask=$('#confirmMask'), cmdTitle=$('#cmdTitle'), cdTxt=$('#countdown');
-const punishMask=$('#punishMask'), punishTxt=$('#punishTimer');
-
-/* ========== 工具函数 ========== */
-function $(sel){return document.querySelector(sel);}
+/* -------- DOM -------- */
+const $=s=>document.querySelector(s);
+const gate=$('#gate'), panel=$('#panel'), status=$('#status'),
+      obeyBar=$('#obeyBar'), blushBar=$('#blushBar'), logEl=$('#log'), badgeArea=$('#badgeArea'),
+      catImg=$('#catImg'), confirmMask=$('#confirmMask'), cmdTitle=$('#cmdTitle'), cdTxt=$('#countdown'),
+      punishMask=$('#punishMask'), punishTxt=$('#punishTimer'), coinTxt=$('#coin'),
+      liquid=$('#liquid'), shop=$('#shop');
+/* -------- 基本函数 -------- */
 function addLog(t){const p=document.createElement('p');p.textContent=t;logEl.appendChild(p);}
-function showBadge(icon){const i=document.createElement('img');i.src=icon;badgeArea.appendChild(i);}
-
-/* ========== 入口口令 ========== */
+function showBadge(i){const img=document.createElement('img');img.src=i;badgeArea.appendChild(img);}
+function updateBars(){
+  obeyBar.style.width=obey+'%'; blushBar.style.width=blush+'%';
+  const clr= blush<50?'#66c':(blush<80?'#f79':'#f22'); obeyBar.style.background=clr; blushBar.style.background='#f38';
+}
+function updateCoin(x){ coin+=x; coinTxt.textContent=coin; }
+/* -------- 入口口令 -------- */
 function checkCode(){
-  if($('#code').value.trim()==='璃，我已就绪'){
-    gate.style.display='none'; panel.style.display='block';
-  }else alert('口令错误，重输！');
+  if($('#code').value.trim()==='璃，我已就绪'){ gate.style.display='none'; panel.style.display='block'; }
+  else alert('口令错误，重输！');
 }
-
-/* ========== 指令确认 ========== */
-function askConfirm(cmd){
-  pendingCmd=cmd; cmdTitle.textContent=`执行「${cmd}」？`; cd=5; cdTxt.textContent=cd;
+/* -------- 指令确认 -------- */
+function askConfirm(c){ pendingCmd=c; cmdTitle.textContent=`执行「${c}」？`; cd=5; cdTxt.textContent=cd;
   confirmMask.style.display='flex';
-  cdTimer=setInterval(()=>{cd--;cdTxt.textContent=cd;if(cd===0){clearInterval(cdTimer);submitChoice(false)}},1000);
-}
-function submitChoice(obeyChoice){
-  clearInterval(cdTimer); confirmMask.style.display='none';
-  obeyChoice?doObey(pendingCmd):doPunish('违抗：'+pendingCmd);
-}
-
-/* ========== 服从逻辑 ========== */
+  cdTimer=setInterval(()=>{ cd--; cdTxt.textContent=cd; if(cd===0){clearInterval(cdTimer);submitChoice(false);} },1000);}
+function submitChoice(ok){ clearInterval(cdTimer); confirmMask.style.display='none';
+  ok?doObey(pendingCmd):doPunish('违抗：'+pendingCmd); }
+/* -------- 服从逻辑 -------- */
 function doObey(cmd){
+  if(cmd==='请求高潮'){ if(locked){addLog('⚠️ 锁精禁止高潮');return;} else {shootCnt++; updateCoin(2); addLog('💦 射出！'); liquidRise();}}
+  if(cmd==='不准射'){ locked=true; addLog('🔒 主人锁精'); }
   addLog('服从：'+cmd); status.textContent='执行中：'+cmd;
-  if(cmd.includes('张嘴')||cmd.includes('舔')){ lickCnt++; catImg.src='img/cat_lick.png'; }
-  if(cmd.includes('夹')){ clampCnt++; catImg.src='img/cat_clamp.png'; }
+
+  if(cmd.includes('张嘴')||cmd.includes('舔')){ lickCnt++; catImg.src='img/cat_lick.png'; updateCoin(1);}
+  if(cmd.includes('夹')){ clampCnt++; catImg.src='img/cat_clamp.png'; updateCoin(1);}
 
   combo.push(cmd); if(combo.length>3) combo.shift();
   if(combo.join('>')==='张嘴>夹紧10秒>不准射') lastCombo=combo.join('>');
 
   obey=Math.min(100,obey+10); blush=Math.min(100,blush+5); updateBars(); checkAch();
 }
-
-/* ========== 违抗惩罚 ========== */
-function doPunish(msg){
-  violateCnt++; addLog(msg); status.textContent='惩罚中'; checkAch();
+/* -------- 违抗惩罚 -------- */
+function doPunish(msg){ violateCnt++; addLog(msg); status.textContent='惩罚中'; checkAch();
   punishMask.style.display='flex'; let t=30; punishTxt.textContent=t;
-  punishTimer=setInterval(()=>{t--;punishTxt.textContent=t;if(t===0){clearInterval(punishTimer);punishMask.style.display='none';status.textContent='等待指令';}},1000);
+  punishTimer=setInterval(()=>{t--;punishTxt.textContent=t;if(t===0){clearInterval(punishTimer);punishMask.style.display='none';status.textContent='等待指令';}},1000); }
+/* -------- 锁精按钮 -------- */
+function toggleLock(){ locked=!locked; addLog(locked?'🔒 锁精开启':'🔓 已解锁'); }
+/* -------- 成就检查 -------- */
+function checkAch(){ for(const k in ACH){ const a=ACH[k]; if(!a.u && a.check()){ a.u=true; showBadge(a.icon); addLog('🎖 解锁成就'); updateCoin(2);} } }
+/* -------- 蜜汁币商店 -------- */
+function openShop(){ shop.style.display='flex'; }
+function buySkin(){
+  if(coin>=5){ coin-=5; updateCoin(0); document.body.style.background='#221133 url(img/shop_skin1.png)';
+    alert('贴纸已应用'); shop.style.display='none'; }
+  else alert('蜜汁币不足！');
 }
-
-/* ========== 进度条 ========== */
-function updateBars(){
-  obeyBar.style.width=obey+'%'; blushBar.style.width=blush+'%';
-  const clr= blush<50?'#66c':(blush<80?'#f79':'#f22'); obeyBar.style.background=clr; blushBar.style.background='#f38';
-}
-
-/* ========== 成就 ========== */
-function checkAch(){
-  for(const k in ACH){const a=ACH[k];if(!a.u && a.check()){a.u=true;showBadge(a.icon);addLog('🎖 解锁成就');}}
-}
+/* -------- 液面 & 天气 -------- */
+let rainAudio=new Audio('audio/rain.mp3'); rainAudio.loop=true;
+function liquidRise(val=10){ const h=parseInt(liquid.style.height)||40; liquid.style.height=(h+val)+'px'; if(h+val>120){ liquid.classList.add('rain'); rainAudio.play();}}
+function setDayNight(){ const h=new Date().getHours(); if(h>=22||h<6){ liquid.classList.add('rain'); rainAudio.play(); } else { liquid.classList.remove('rain'); rainAudio.pause(); }}
+setDayNight(); setInterval(setDayNight,30*60*1000);
+/* -------- 主人点名通知 -------- */
+if('Notification'in window && Notification.permission!=='denied'){ Notification.requestPermission();}
+function ping(){ const cmds=['张嘴','夹紧10秒','不准射']; const c=cmds[Math.floor(Math.random()*cmds.length)];
+  if(Notification.permission==='granted'){ new Notification('主人点名：'+c,{icon:'icon/bell.svg'})}
+  setTimeout(ping,3*60*1000);}
+setTimeout(ping,3*60*1000);
 </script>
 </body>
 </html>
