@@ -43,15 +43,27 @@ function submitChoice(obeyChoice){
 function doObey(cmd){
   addLog('服从：'+cmd);
   status.textContent='执行中：'+cmd;
+  if(cmd.includes('张嘴') || cmd.includes('舔')){
+      lickCnt++;                                // 舔 +1
+      catImg.src = 'img/cat_lick.png';          // 小猫变舔帧
+  }
+  if(cmd.includes('夹')){
+      clampCnt++;                               // 夹 +1
+      catImg.src = 'img/cat_clamp.png';         // 小猫变夹帧
+  }
   obey=Math.min(100,obey+10);
   blush=Math.min(100,blush+5);
   updateBars();
 }
 
-function doPunish(msg){
+
+  function doPunish(msg){
+  violateCnt++;                // 违令 +1
   addLog(msg);
   status.textContent='惩罚中';
   punishMask.style.display='flex';
+    // …30 秒倒计逻辑保持不变…
+}
   let t=30; punishTimerElem.textContent=t;
   punishTimer=setInterval(()=>{ t--; punishTimerElem.textContent=t;
     if(t===0){clearInterval(punishTimer);punishMask.style.display='none';status.textContent='等待主人指令';}
