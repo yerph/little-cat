@@ -69,3 +69,4 @@ function updateBars(){
 function addLog(txt){
   const p=document.createElement('p');p.textContent=txt;logElem.appendChild(p);
 }
+const catImg = document.getElementById('catImg');
